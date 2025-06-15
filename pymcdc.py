@@ -1,33 +1,4 @@
-# -*- coding: utf-8 -*-
-"""SSC5877_VV&T_trabalho_final.ipynb
-
-# SSC5877 - Verificação, Validação e Teste de Software
-
-## Trabalho final - Desafio
-
-### Conceitos
-
-#### O que é MC/DC?
-
-MC/DC (Modified Condition/Decision Coverage) é um critério de teste que garante que:
-
-*   Cada condição atômica em uma decisão (ex: a and b) foi avaliada como True e False;
-
-*   Cada condição afeta isoladamente o resultado final da decisão.
-
-### Funções
-
-#### Validação de Posição
-"""
-
-def isValidPosition(x, y, z):
-    if (x > 10 or y > 20) and z > 0:
-        return True
-    else:
-        return False
-
 """#### Extração de decisões"""
-
 import ast
 import inspect
 

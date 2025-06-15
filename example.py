@@ -1,22 +1,28 @@
-# Example test cases for leap year calculation
+# Example test cases for position validation
 
 # Static test cases
-static_test_cases = [-1, 1600, 1700, 1752, 1800, 1900, 2000, 2020, 2023, 10000]
+static_test_cases = [
+    (5, 15, 1),    # Valid position
+    (15, 10, 1),   # Valid position (x > 10)
+    (5, 25, 1),    # Valid position (y > 20)
+    (15, 25, 1),   # Valid position (both x > 10 and y > 20)
+    (5, 15, 0),    # Invalid position (z <= 0)
+    (15, 25, 0),   # Invalid position (z <= 0)
+    (5, 15, -1),   # Invalid position (z <= 0)
+]
 
 # Random test cases
 import random
-random_test_cases = [random.randint(1, 9999) for _ in range(100)]
+random_test_cases = [
+    (random.randint(0, 20), random.randint(0, 30), random.randint(-5, 5))
+    for _ in range(100)
+]
 
 # Example code for testing
-codigo_eh_bissexto = '''
-def eh_bissexto(ano: int) -> bool:
-    if ano < 1 or ano > 9999:
-        raise ValueError("Ano inválido: deve estar entre 1 e 9999.")
-    if ano <= 1752:
-        return ano % 4 == 0
-    if ano % 400 == 0:
+codigo = '''
+def isValidPosition(x, y, z):
+    if (x > 10 or y > 20) and z > 0:
         return True
-    if ano % 100 == 0:
+    else:
         return False
-    return ano % 4 == 0
 ''' 

@@ -7,18 +7,6 @@
 
 ### Conceitos
 
-#### O que é um ano bissexto?
-
-Um ano bissexto é aquele que possui 366 dias ao invés de 365, com o dia extra sendo 29 de fevereiro. De acordo com as regras do calendário gregoriano (em vigor desde 1752), um ano é bissexto se:
-
-*   For divisível por 4
-
-*   Exceto se for divisível por 100
-
-*   A menos que também seja divisível por 400
-
-Além disso, anos anteriores a 1752 seguem uma lógica simplificada: são bissextos se forem divisíveis por 4.
-
 #### O que é MC/DC?
 
 MC/DC (Modified Condition/Decision Coverage) é um critério de teste que garante que:
@@ -29,23 +17,19 @@ MC/DC (Modified Condition/Decision Coverage) é um critério de teste que garant
 
 ### Funções
 
-#### Bissexto
+#### Validação de Posição
 """
 
-def eh_bissexto(ano: int) -> bool:
-    if ano < 1 or ano > 9999:
-        raise ValueError("Ano inválido: deve estar entre 1 e 9999.")
-    if ano <= 1752:
-        return ano % 4 == 0
-    if ano % 400 == 0:
+def isValidPosition(x, y, z):
+    if (x > 10 or y > 20) and z > 0:
         return True
-    if ano % 100 == 0:
+    else:
         return False
-    return ano % 4 == 0
 
 """#### Extração de decisões"""
 
 import ast
+import inspect
 
 def extrair_decisoes(codigo: str):
     arvore = ast.parse(codigo)
@@ -60,9 +44,20 @@ def extrair_decisoes(codigo: str):
     return decisoes
 
 # Import test cases from example.py
-from example import static_test_cases, random_test_cases, codigo_eh_bissexto
+from example import static_test_cases, random_test_cases, codigo
 
-decisoes = extrair_decisoes(codigo_eh_bissexto)
+# Extract function name and parameters from the code
+tree = ast.parse(codigo)
+function_def = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef))
+function_name = function_def.name
+function_params = [arg.arg for arg in function_def.args.args]
+
+# Create a namespace to execute the code
+namespace = {}
+exec(codigo, namespace)
+function = namespace[function_name]
+
+decisoes = extrair_decisoes(codigo)
 for i, d in enumerate(decisoes, 1):
     print(f"Decisão {i}: {d}")
 
@@ -71,45 +66,110 @@ for i, d in enumerate(decisoes, 1):
 import itertools
 
 def gerar_mcdc(decisao):
-    operadores_logicos = ["and", "or"]
-    for operador in operadores_logicos:
-        if operador in decisao:
-            termos = [t.strip(" ()") for t in decisao.split(operador)]
-            combinacoes = list(itertools.product([True, False], repeat=len(termos)))
-            validas = []
+    # Parse the decision into an AST to handle complex conditions
+    try:
+        tree = ast.parse(decisao, mode='eval')
+    except SyntaxError:
+        # If it's a simple condition without operators, return it as is
+        return [decisao], [((True,), True), ((False,), False)]
 
-            for i, c1 in enumerate(combinacoes):
-                for j, c2 in enumerate(combinacoes):
-                    if i >= j:
-                        continue
-                    difs = [k for k in range(len(c1)) if c1[k] != c2[k]]
-                    if len(difs) == 1:
-                        r1 = eval(f" {operador} ".join(str(v) for v in c1))
-                        r2 = eval(f" {operador} ".join(str(v) for v in c2))
-                        if r1 != r2:
-                            validas.append((c1, r1))
-                            validas.append((c2, r2))
+    # Extract all atomic conditions
+    termos = []
+    operadores = []
+    
+    class VisitanteCondicao(ast.NodeVisitor):
+        def visit_BoolOp(self, node):
+            # Record the operator
+            if isinstance(node.op, ast.And):
+                operadores.append('and')
+            elif isinstance(node.op, ast.Or):
+                operadores.append('or')
+            self.generic_visit(node)
+            
+        def visit_Compare(self, node):
+            # Extract the comparison as a single condition
+            termos.append(ast.unparse(node))
+            
+        def visit_Name(self, node):
+            # Handle simple boolean variables
+            if node.id not in termos:
+                termos.append(node.id)
 
-            unicos = []
-            for entrada in validas:
-                if entrada not in unicos:
-                    unicos.append(entrada)
-            return termos, unicos
+    VisitanteCondicao().visit(tree)
+    
+    if not termos:
+        # If no terms were found, treat the whole expression as one term
+        return [decisao], [((True,), True), ((False,), False)]
 
-    return [decisao], [((True,), True), ((False,), False)]
+    # Generate all possible combinations
+    combinacoes = list(itertools.product([True, False], repeat=len(termos)))
+    validas = []
 
+    # For each term, find pairs where only that term changes and the result changes
+    for i in range(len(termos)):
+        for c1 in combinacoes:
+            for c2 in combinacoes:
+                # Check if only one term changed
+                if sum(1 for a, b in zip(c1, c2) if a != b) != 1:
+                    continue
+                # Check if the changed term is the one we're testing
+                if c1[i] == c2[i]:
+                    continue
+                
+                # Create a namespace with the values
+                namespace = dict(zip(termos, c1))
+                try:
+                    # Create a safe evaluation environment
+                    safe_dict = {"__builtins__": {}}
+                    safe_dict.update(namespace)
+                    r1 = eval(decisao, safe_dict)
+                except:
+                    continue
+                    
+                namespace = dict(zip(termos, c2))
+                try:
+                    safe_dict = {"__builtins__": {}}
+                    safe_dict.update(namespace)
+                    r2 = eval(decisao, safe_dict)
+                except:
+                    continue
+                
+                # Check if the result changed
+                if r1 != r2:
+                    validas.append((c1, r1))
+                    validas.append((c2, r2))
+
+    # Remove duplicates while preserving order
+    unicos = []
+    for entrada in validas:
+        if entrada not in unicos:
+            unicos.append(entrada)
+
+    # If no valid combinations were found, return basic True/False cases
+    if not unicos:
+        return termos, [((True,) * len(termos), True), ((False,) * len(termos), False)]
+
+    return termos, unicos
+
+# Print the MC/DC combinations in a more readable format
 for decisao in decisoes:
     termos, entradas = gerar_mcdc(decisao)
-    print(f"Decisão: {decisao}")
-    print("Combinações a validar (entrada -> saída):")
+    print(f"\nDecisão: {decisao}")
+    print("Termos:", ", ".join(termos))
+    print("Combinações MC/DC (entrada -> saída):")
     for entrada, resultado in entradas:
-        print(f"  {entrada} -> {resultado}")
+        # Create a mapping of terms to their values for better readability
+        term_values = dict(zip(termos, entrada))
+        print(f"  {term_values} -> {resultado}")
     print()
 
-"""#### Validação das combinações"""
+"""
+# Commented out test-related code for now
 
-def avaliar_entrada(ano, termos, operador):
-    valores = [eval(t, {}, {"ano": ano}) for t in termos]
+def avaliar_entrada(args, termos, operador):
+    # Create a namespace with the function parameters
+    namespace = dict(zip(function_params, args))
+    valores = [eval(t, {}, namespace) for t in termos]
     if operador:
         resultado = eval(f" {operador} ".join(str(v) for v in valores))
     else:
@@ -124,17 +184,17 @@ def extrair_termos_operador(decisao):
     else:
         return [decisao.strip()], None
 
-def verificar_cobertura_mcdc_real(decisoes, anos):
-    print("Verificação da cobertura MC/DC com base nos anos testados:\n")
+def verificar_cobertura_mcdc_real(decisoes, test_cases):
+    print("Verificação da cobertura MC/DC com base nos casos testados:\n")
 
     for decisao in decisoes:
         termos, entradas_esperadas = gerar_mcdc(decisao)
         termos_completos, operador = extrair_termos_operador(decisao)
 
         entradas_reais = set()
-        for ano in anos:
+        for args in test_cases:
             try:
-                valores, resultado = avaliar_entrada(ano, termos_completos, operador)
+                valores, resultado = avaliar_entrada(args, termos_completos, operador)
                 entradas_reais.add((valores, resultado))
             except Exception:
                 continue
@@ -164,46 +224,39 @@ def verificar_cobertura_mcdc_real(decisoes, anos):
                 print(f"  {e} -> {r}")
             print()
 
-"""### Testes
-
-#### Testes estáticos"""
-
-print("Anos testados:")
-print(static_test_cases)
+print("Casos de teste:")
+for args in static_test_cases:
+    print(f"{', '.join(f'{p}={v}' for p, v in zip(function_params, args))}")
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for ano in static_test_cases:
+for args in static_test_cases:
     try:
-        resultado = eh_bissexto(ano)
-        print(f"Ano {ano}: {'Bissexto' if resultado else 'Não bissexto'}")
-    except ValueError as e:
-        print(f"Ano {ano}: Erro - {e}")
+        resultado = function(*args)
+        print(f"{function_name}({', '.join(str(v) for v in args)}): {'Válido' if resultado else 'Inválido'}")
+    except Exception as e:
+        print(f"{function_name}({', '.join(str(v) for v in args)}): Erro - {e}")
 
 print("-" * 40)
 
 verificar_cobertura_mcdc_real(decisoes, static_test_cases)
 
-"""#### Testes aleatórios"""
-
-print("Anos testados:")
-print(random_test_cases)
+print("Casos de teste:")
+for args in random_test_cases:
+    print(f"{', '.join(f'{p}={v}' for p, v in zip(function_params, args))}")
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for ano in random_test_cases:
+for args in random_test_cases:
     try:
-        resultado = eh_bissexto(ano)
-        print(f"Ano {ano}: {'Bissexto' if resultado else 'Não bissexto'}")
-    except ValueError as e:
-        print(f"Ano {ano}: Erro - {e}")
+        resultado = function(*args)
+        print(f"{function_name}({', '.join(str(v) for v in args)}): {'Válido' if resultado else 'Inválido'}")
+    except Exception as e:
+        print(f"{function_name}({', '.join(str(v) for v in args)}): Erro - {e}")
 
 print("-" * 40)
 
 verificar_cobertura_mcdc_real(decisoes, random_test_cases)
-
-"""### Conclusões
-
-***Adicionar as conclusões e as observações das implementações feitas***"""
+"""

@@ -11,23 +11,12 @@ def extrair_decisoes(codigo: str):
             self.generic_visit(node)
 
     VisitanteDecisao().visit(arvore)
-    print( "Decisões: ", decisoes)
     return decisoes
 
-# Import code and test cases
+# Import code
 from example import codigo
 
-# Extract function name and parameters from the code
-tree = ast.parse(codigo)
-function_def = next(node for node in ast.walk(tree) if isinstance(node, ast.FunctionDef))
-function_name = function_def.name
-function_params = [arg.arg for arg in function_def.args.args]
-
-# Create a namespace to execute the code
-namespace = {}
-exec(codigo, namespace)
-function = namespace[function_name]
-
+# Extract and print decisions
 decisoes = extrair_decisoes(codigo)
 for i, d in enumerate(decisoes, 1):
     print(f"Decisão {i}: {d}")

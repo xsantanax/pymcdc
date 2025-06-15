@@ -1,7 +1,5 @@
 # Extração de decisões
-
 import ast
-import inspect
 
 def extrair_decisoes(codigo: str):
     arvore = ast.parse(codigo)
@@ -13,11 +11,11 @@ def extrair_decisoes(codigo: str):
             self.generic_visit(node)
 
     VisitanteDecisao().visit(arvore)
+    print( "Decisões: ", decisoes)
     return decisoes
 
 # Import code and test cases
 from example import codigo
-# from test_example import position_static_test_cases, position_random_test_cases
 
 # Extract function name and parameters from the code
 tree = ast.parse(codigo)
@@ -34,8 +32,8 @@ decisoes = extrair_decisoes(codigo)
 for i, d in enumerate(decisoes, 1):
     print(f"Decisão {i}: {d}")
 
-"""#### Geração de combinações MC/DC"""
-
+"""
+# Geração de combinações MC/DC
 import itertools
 
 def gerar_mcdc(decisao):
@@ -135,9 +133,6 @@ for decisao in decisoes:
         term_values = dict(zip(termos, entrada))
         print(f"  {term_values} -> {resultado}")
     print()
-
-"""
-# Commented out test-related code for now
 
 def avaliar_entrada(args, termos, operador):
     # Create a namespace with the function parameters

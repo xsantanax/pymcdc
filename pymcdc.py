@@ -59,18 +59,8 @@ def extrair_decisoes(codigo: str):
     VisitanteDecisao().visit(arvore)
     return decisoes
 
-codigo_eh_bissexto = '''
-def eh_bissexto(ano: int) -> bool:
-    if ano < 1 or ano > 9999:
-        raise ValueError("Ano inválido: deve estar entre 1 e 9999.")
-    if ano <= 1752:
-        return ano % 4 == 0
-    if ano % 400 == 0:
-        return True
-    if ano % 100 == 0:
-        return False
-    return ano % 4 == 0
-'''
+# Import test cases from example.py
+from example import static_test_cases, random_test_cases, codigo_eh_bissexto
 
 decisoes = extrair_decisoes(codigo_eh_bissexto)
 for i, d in enumerate(decisoes, 1):
@@ -178,15 +168,13 @@ def verificar_cobertura_mcdc_real(decisoes, anos):
 
 #### Testes estáticos"""
 
-anos = [-1, 1600, 1700, 1752, 1800, 1900, 2000, 2020, 2023, 10000]
-
 print("Anos testados:")
-print(anos)
+print(static_test_cases)
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for ano in anos:
+for ano in static_test_cases:
     try:
         resultado = eh_bissexto(ano)
         print(f"Ano {ano}: {'Bissexto' if resultado else 'Não bissexto'}")
@@ -195,21 +183,17 @@ for ano in anos:
 
 print("-" * 40)
 
-verificar_cobertura_mcdc_real(decisoes, anos)
+verificar_cobertura_mcdc_real(decisoes, static_test_cases)
 
 """#### Testes aleatórios"""
 
-import random
-
-anos = [random.randint(1, 9999) for _ in range(100)]
-
 print("Anos testados:")
-print(anos)
+print(random_test_cases)
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for ano in anos:
+for ano in random_test_cases:
     try:
         resultado = eh_bissexto(ano)
         print(f"Ano {ano}: {'Bissexto' if resultado else 'Não bissexto'}")
@@ -218,7 +202,7 @@ for ano in anos:
 
 print("-" * 40)
 
-verificar_cobertura_mcdc_real(decisoes, anos)
+verificar_cobertura_mcdc_real(decisoes, random_test_cases)
 
 """### Conclusões
 

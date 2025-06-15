@@ -1,4 +1,33 @@
+# -*- coding: utf-8 -*-
+"""SSC5877_VV&T_trabalho_final.ipynb
+
+# SSC5877 - Verificação, Validação e Teste de Software
+
+## Trabalho final - Desafio
+
+### Conceitos
+
+#### O que é MC/DC?
+
+MC/DC (Modified Condition/Decision Coverage) é um critério de teste que garante que:
+
+*   Cada condição atômica em uma decisão (ex: a and b) foi avaliada como True e False;
+
+*   Cada condição afeta isoladamente o resultado final da decisão.
+
+### Funções
+
+#### Validação de Posição
+"""
+
+def isValidPosition(x, y, z):
+    if (x > 10 or y > 20) and z > 0:
+        return True
+    else:
+        return False
+
 """#### Extração de decisões"""
+
 import ast
 import inspect
 
@@ -14,8 +43,9 @@ def extrair_decisoes(codigo: str):
     VisitanteDecisao().visit(arvore)
     return decisoes
 
-# Import test cases from example.py
-from example import static_test_cases, random_test_cases, codigo
+# Import code and test cases
+from example import codigo
+from test_example import position_static_test_cases, position_random_test_cases
 
 # Extract function name and parameters from the code
 tree = ast.parse(codigo)
@@ -196,13 +226,13 @@ def verificar_cobertura_mcdc_real(decisoes, test_cases):
             print()
 
 print("Casos de teste:")
-for args in static_test_cases:
+for args in position_static_test_cases:
     print(f"{', '.join(f'{p}={v}' for p, v in zip(function_params, args))}")
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for args in static_test_cases:
+for args in position_static_test_cases:
     try:
         resultado = function(*args)
         print(f"{function_name}({', '.join(str(v) for v in args)}): {'Válido' if resultado else 'Inválido'}")
@@ -211,16 +241,16 @@ for args in static_test_cases:
 
 print("-" * 40)
 
-verificar_cobertura_mcdc_real(decisoes, static_test_cases)
+verificar_cobertura_mcdc_real(decisoes, position_static_test_cases)
 
 print("Casos de teste:")
-for args in random_test_cases:
+for args in position_random_test_cases:
     print(f"{', '.join(f'{p}={v}' for p, v in zip(function_params, args))}")
 
 print("-" * 40)
 
 print("\nResultados dos testes:")
-for args in random_test_cases:
+for args in position_random_test_cases:
     try:
         resultado = function(*args)
         print(f"{function_name}({', '.join(str(v) for v in args)}): {'Válido' if resultado else 'Inválido'}")
@@ -229,5 +259,5 @@ for args in random_test_cases:
 
 print("-" * 40)
 
-verificar_cobertura_mcdc_real(decisoes, random_test_cases)
+verificar_cobertura_mcdc_real(decisoes, position_random_test_cases)
 """
